@@ -1,5 +1,5 @@
 {
-  "name": "tdxdemoblock",
+  "name": "custom-design-template",
   "version": "0.0.1",
   "description": "BlockSDK demo block for TDX 2019 - Block Template Configuration",
   "main": "index.js",
@@ -9,18 +9,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vargasd/tdxdemoblock.git"
+    "url": "git+https://github.com/vrushalishivsharan19/Custom-design-template.git"
   },
   "engines": {
     "npm": "5.8.0",
     "node": "8.9.4"
   },
-  "author": "Sam Varga",
+  "author": "v",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/vargasd/tdxdemoblock/issues"
+    "url": "https://github.com/vrushalishivsharan19/Custom-design-template/issues"
   },
-  "homepage": "https://github.com/vargasd/tdxdemoblock",
+  "homepage": "https://github.com/vrushalishivsharan19/Custom-design-template",
   "dependencies": {
     "@salesforce-ux/design-system": "^2.9.2",
     "blocksdk": "^1.1.1",
