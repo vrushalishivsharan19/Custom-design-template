@@ -24,3 +24,8 @@ npm-debug.log
 # MAC STUFF
 .DS_Store
 *.orig
+
+# Local dev
+server.cert
+server.key
+.env

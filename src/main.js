@@ -1,77 +1,74 @@
-require('../node_modules/@salesforce-ux/design-system/assets/styles/salesforce-lightning-design-system.css');
+import './components/templating-block-app';
+import SDK from 'blocksdk';
+import { getHtml, parseTemplate } from './lib/templating-block-utils';
+import { getBlock } from './lib/api';
 
-var SDK = require('blocksdk');
-var sdk = new SDK(null, null, true); // 3rd argument true bypassing https requirement: not prod worthy
+const sdk = new SDK();
 
-var address, width, height, zoom, link, mapsKey;
-
-function debounce (func, wait, immediate) {
-	var timeout;
-	return function() {
-		var context = this, args = arguments;
-		var later = function() {
-			timeout = null;
-			if (!immediate) func.apply(context, args);
-		};
-		var callNow = immediate && !timeout;
-		clearTimeout(timeout);
-		timeout = setTimeout(later, wait);
-		if (callNow) func.apply(context, args);
-	};
-}
-
-function paintSettings () {
-	document.getElementById('text-input-id-0').value = mapsKey;
-	document.getElementById('text-input-id-1').value = address;
-	document.getElementById('slider-id-01').value = width;
-	document.getElementById('slider-id-02').value = height;
-	document.getElementById('slider-id-03').value = zoom;
-}
-
-function paintSliderValues () {
-	document.getElementById('slider-id-01-val').innerHTML = document.getElementById('slider-id-01').value;
-	document.getElementById('slider-id-02-val').innerHTML = document.getElementById('slider-id-02').value;
-	document.getElementById('slider-id-03-val').innerHTML = document.getElementById('slider-id-03').value;
-}
-
-function paintMap() {
-	mapsKey = document.getElementById('text-input-id-0').value;
-	address = document.getElementById('text-input-id-1').value;
-	width = document.getElementById('slider-id-01').value;
-	height = document.getElementById('slider-id-02').value;
-	zoom = document.getElementById('slider-id-03').value;
-	link = document.getElementById('text-input-id-2').value;
-	if (!address) {
-		return;
+function initializeApp(data) {
+	const app = document.createElement('templating-block-app');
+	app.locked = data.locked;
+	if (data.template) {
+		app.assetId = data.template.id;
 	}
-	var url = 'https://maps.googleapis.com/maps/api/staticmap?center=' +
-		address.split(' ').join('+') + '&size=' + width + 'x' + height + '&zoom=' + zoom +
-		'&markers=' + address.split(' ').join('+') + '&key=' + mapsKey;
-	sdk.setContent('<a href="' + link + '"><img src="' + url + '" /></a>');
-	sdk.setData({
-		address: address,
-		width: width,
-		height: height,
-		zoom: zoom,
-		link: link,
-		mapsKey: mapsKey
+
+	// respond to app changes
+	app.addEventListener('change', e => {
+		// always get current data
+		sdk.getData(blockData => {
+			const newBlockData = blockData;
+
+			// extend current data with new data
+			switch (e.detail.type) {
+				case 'template':
+					newBlockData.template = e.detail.template;
+					newBlockData.fields = parseTemplate(newBlockData.template);
+					app.fields = newBlockData.fields;
+					break;
+				case 'fields':
+					newBlockData.fields = e.detail.fields;
+					break;
+				default:
+					break;
+			}
+
+			setEverything(newBlockData);
+		});
 	});
-	localStorage.setItem('googlemapsapikeyforblock', mapsKey);
+
+	document.getElementById('workspace').appendChild(app);
+	app.fields = data.fields;
 }
 
-sdk.getData(function (data) {
-	address = data.address || '';
-	width = data.width || 400;
-	height = data.height || 300;
-	zoom = data.zoom || 15;
-	link = data.link || '';
-	mapsKey = data.mapsKey || localStorage.getItem('googlemapsapikeyforblock');
-	paintSettings();
-	paintSliderValues();
-	paintMap();
+function setEverything(data) {
+	// always set data with latest
+	sdk.setData(data);
+	// set content with latest changes
+	sdk.setContent(getHtml(data.template, data.fields, false));
+	// update preview to use latest, with placeholders for preview
+	sdk.setSuperContent(getHtml(data.template, data.fields, true));
+}
+
+async function getOverrideData(data, assetId) {
+	data.template = await getBlock(assetId);
+	data.fields = parseTemplate(data.template).map((field, idx) => {
+		return {
+			...field,
+			value: data.fields && data.fields[idx] && data.fields[idx].value || ''
+		};
+	});
+	data.locked = true;
+
+	return data;
+}
+
+sdk.getData(async (data) => {
+	if (window.app.assetId) {
+		const overrideData = await getOverrideData(data, window.app.assetId);
+		setEverything(overrideData);
+	}
+
+	initializeApp(data);
 });
 
-document.getElementById('workspace').addEventListener("input", function () {
-	debounce(paintMap, 500)();
-	paintSliderValues();
-});
+sdk.triggerAuth(window.app.appID);
