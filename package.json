@@ -23,7 +23,7 @@
     "express": "^4.16.3"
   },
   "devDependencies": {
-    "webpack": "^3.10.0",
+    "webpack": "^5.70.0",
     "webpack-css-loaders": "^1.0.0"
   }
 }
